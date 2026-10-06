@@ -1,0 +1,388 @@
+/* ===========================================================================
+ * Promift — the kitchen journey.
+ * A pinned, scroll-driven stage: on capable desktops a live WebGL room, on
+ * phones / low-power devices the pre-rendered film of the same camera path,
+ * and under prefers-reduced-motion a set of still frames. Progress is a pure
+ * function of scroll position, so every speed lands on the same final frame.
+ * ========================================================================= */
+
+.pf-journey {
+  position: relative;
+  background: var(--pf-ink);
+  color: var(--pf-plaster);
+  isolation: isolate;
+}
+
+/* The tall spacer is the scroll budget for the pinned stage. */
+.pf-journey__scrub {
+  position: relative;
+  height: 760vh;
+}
+
+.pf-journey__stage {
+  position: sticky;
+  top: 0;
+  z-index: 0;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--pf-ink);
+}
+
+.pf-journey__layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.pf-journey__canvas {
+  display: block;
+  touch-action: pan-y;
+}
+
+.pf-journey__film {
+  display: block;
+  object-fit: cover;
+  object-position: center;
+}
+
+.pf-journey__still {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Boot state before the canvas paints / the film seeks. */
+.pf-journey__boot {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      120% 90% at 60% 30%,
+      color-mix(in srgb, var(--pf-green) 58%, var(--pf-ink)) 0%,
+      var(--pf-ink) 70%
+    );
+}
+
+.pf-journey__progress {
+  position: absolute;
+  z-index: 30;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: color-mix(in srgb, var(--pf-plaster) 18%, transparent);
+  pointer-events: none;
+}
+
+.pf-journey__progress span {
+  display: block;
+  height: 100%;
+  background: var(--pf-oak);
+  transform: scaleX(var(--pf-p));
+  transform-origin: left center;
+}
+
+/* Chapter copy sits in the stage, absolutely positioned and crossfaded. */
+.pf-journey__chapters {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.pf-journey__chapter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: clamp(4.5rem, 10vh, 8rem) clamp(1.25rem, 6vw, 6rem);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.5s ease,
+    visibility 0s linear 0.5s;
+}
+
+.pf-journey__chapter[data-active="true"] {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.5s ease,
+    visibility 0s linear 0s;
+}
+
+.pf-journey__chapter[data-align="right"] {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.pf-journey__chapter[data-align="right"] .pf-journey__copy {
+  margin-left: auto;
+}
+
+.pf-journey__copy {
+  position: relative;
+  width: min(38rem, 46vw);
+  pointer-events: auto;
+}
+
+.pf-journey__copy::before {
+  position: absolute;
+  z-index: -1;
+  inset: -3rem -4.5rem;
+  content: "";
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--pf-ink) 84%, transparent) 0%,
+    color-mix(in srgb, var(--pf-ink) 52%, transparent) 54%,
+    transparent 78%
+  );
+  pointer-events: none;
+}
+
+.pf-journey__kicker {
+  max-width: 30ch;
+  margin: 0 0 0.9rem;
+  color: var(--pf-oak-2);
+  font-family: var(--pf-display);
+  font-stretch: 115%;
+  font-weight: 700;
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.pf-journey__title {
+  max-width: 14ch;
+  margin: 0;
+  color: var(--pf-plaster);
+  font-family: var(--pf-display);
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: clamp(2.4rem, 5.6vw, 5.4rem);
+  letter-spacing: -0.045em;
+  line-height: 0.94;
+  text-wrap: balance;
+}
+
+.pf-journey__body {
+  max-width: 42ch;
+  margin: 1.3rem 0 0;
+  color: color-mix(in srgb, var(--pf-plaster) 76%, transparent);
+  font-size: clamp(1rem, 1.3vw, 1.18rem);
+  line-height: 1.55;
+}
+
+.pf-journey__chapter[data-align="right"] .pf-journey__body {
+  margin-left: auto;
+}
+
+.pf-journey__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pf-journey__chapter[data-align="right"] .pf-journey__tags {
+  justify-content: flex-end;
+}
+
+.pf-journey__tags li {
+  padding: 0.42rem 0.68rem;
+  border: 1px solid color-mix(in srgb, var(--pf-plaster) 26%, transparent);
+  color: var(--pf-plaster);
+  font-family: var(--pf-display);
+  font-stretch: 112%;
+  font-weight: 600;
+  font-size: 0.76rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Chapter rail */
+.pf-journey__rail {
+  position: absolute;
+  z-index: 26;
+  right: clamp(0.9rem, 3vw, 2.4rem);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  pointer-events: auto;
+}
+
+.pf-journey__rail button {
+  width: 34px;
+  height: 3px;
+  padding: 0;
+  border: 0;
+  background: color-mix(in srgb, var(--pf-plaster) 30%, transparent);
+  cursor: pointer;
+  transition: background-color 0.25s ease, width 0.25s ease;
+}
+
+.pf-journey__rail button[aria-current="step"] {
+  background: var(--pf-oak);
+  width: 52px;
+}
+
+.pf-journey__rail button:focus-visible {
+  outline: 2px solid var(--pf-oak);
+  outline-offset: 3px;
+}
+
+/* Scroll budget for the reduced-motion / stacked fallback. */
+.pf-stills__chapter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  align-items: center;
+  gap: clamp(1.5rem, 5vw, 4rem);
+  padding-block: clamp(2.5rem, 7vh, 5rem);
+  border-bottom: 1px solid color-mix(in srgb, var(--pf-plaster) 18%, transparent);
+}
+
+.pf-stills__media img {
+  width: 100%;
+  display: block;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+}
+
+.pf-stills__chapter[data-align="right"] .pf-stills__media {
+  order: 2;
+}
+
+@media (max-width: 860px) {
+  .pf-journey__scrub {
+    height: 620vh;
+  }
+
+  .pf-journey__chapter,
+  .pf-journey__chapter[data-align="right"] {
+    align-items: flex-end;
+    justify-content: flex-start;
+    text-align: left;
+    padding: 5.5rem max(1.1rem, env(safe-area-inset-right))
+      calc(3.5rem + env(safe-area-inset-bottom))
+      max(1.1rem, env(safe-area-inset-left));
+  }
+
+  .pf-journey__copy {
+    width: 100%;
+  }
+
+  .pf-journey__chapter[data-align="right"] .pf-journey__copy {
+    margin-left: 0;
+  }
+
+  .pf-journey__chapter[data-align="right"] .pf-journey__body,
+  .pf-journey__chapter[data-align="right"] .pf-journey__tags {
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+
+  .pf-journey__copy::before {
+    inset: -2.4rem -1.6rem;
+    background: linear-gradient(
+      to top,
+      var(--pf-ink) 0%,
+      color-mix(in srgb, var(--pf-ink) 82%, transparent) 60%,
+      transparent 100%
+    );
+  }
+
+  .pf-journey__title {
+    max-width: 13ch;
+    font-size: clamp(2.2rem, 10.5vw, 3.6rem);
+  }
+
+  .pf-journey__rail {
+    display: none;
+  }
+
+  .pf-stills__chapter {
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+  }
+
+  .pf-stills__chapter[data-align="right"] .pf-stills__media {
+    order: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-journey__scrub {
+    height: auto;
+  }
+
+  .pf-journey__stage {
+    position: static;
+    height: auto;
+  }
+
+  .pf-journey__chapter {
+    position: static;
+    opacity: 1;
+    visibility: visible;
+    transition: none;
+  }
+
+  .pf-journey__progress,
+  .pf-journey__rail {
+    display: none;
+  }
+}
+
+.pf-journey__caption {
+  position: absolute;
+  left: clamp(1rem, 4vw, 2.4rem);
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  z-index: 3;
+  margin: 0;
+  max-width: 34ch;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: rgba(241, 236, 228, 0.78);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+}
+
+/* Hero: clear the header, keep the phone CTA free, caption bottom-right. */
+.pf-journey__chapter { padding-top: clamp(6.5rem, 14vh, 9rem); }
+.pf-journey__chapter[data-chapter-index="0"] .pf-journey__title {
+  font-size: clamp(2.3rem, 5vw, 4.4rem);
+}
+.pf-journey__caption {
+  left: auto;
+  right: clamp(1rem, 4vw, 2.4rem);
+  text-align: right;
+}
+@media (max-width: 1279px) {
+  .pf-journey__chapter { padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px)); }
+  .pf-journey__caption { bottom: calc(5.6rem + env(safe-area-inset-bottom, 0px)); max-width: 26ch; }
+  .pf-journey__stage { height: 100dvh; }
+}
+
+/* Phones & tablets (hamburger menu, no bottom bar): use the full screen,
+ * and move the concept caption to the top so it never sits on the copy. */
+@media (max-width: 1279px) {
+  .pf-journey__chapter { padding-bottom: calc(2.4rem + env(safe-area-inset-bottom, 0px)) !important; }
+  .pf-journey__caption {
+    top: calc(76px + env(safe-area-inset-top, 0px));
+    bottom: auto !important;
+    left: clamp(1rem, 4vw, 2.4rem);
+    right: auto;
+    max-width: none;
+    text-align: left;
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    opacity: 0.75;
+  }
+}
+@media (max-width: 680px) {
+  .pf-journey__chapter .pf-journey__title { font-size: clamp(2.1rem, 9.5vw, 2.8rem); }
+  .pf-journey__caption { white-space: normal; max-width: 30ch; }
+}
