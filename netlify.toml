@@ -1,0 +1,11 @@
+# Netlify build for the Promift site (TanStack Start, SSR via Netlify Functions).
+# Uses Bun because the project has local workspace packages (npm cannot install them).
+[build]
+  base = "app"
+  command = "bun install && bun --bun x vite build"
+  publish = "dist/client"
+
+[build.environment]
+  NODE_VERSION = "22"
+  BUN_VERSION = "1.4.2"
+  VITE_FORM_BACKEND = "netlify"
