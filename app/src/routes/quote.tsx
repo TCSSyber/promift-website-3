@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRight, Phone } from "lucide-react";
 
 import { QuoteWizard } from "@/components/contact/quote-wizard";
-import { ReviewsMarquee } from "@/components/ui/marquee-card";
+import TestimonialMarquee from "@/components/ui/marquee-01";
 import { Footer, JsonLd, Nav, QuoteModal } from "@/components/site/site-chrome";
 import { localBusiness, meta, site } from "@/site-content";
 
@@ -38,7 +38,7 @@ function ContactPage() {
             </div>
           </div>
         </section>
-        <ReviewsMarquee />
+        <TestimonialMarquee />
         <section className="ct-formsec" id="start" aria-label="Free quote form">
           <QuoteWizard />
         </section>

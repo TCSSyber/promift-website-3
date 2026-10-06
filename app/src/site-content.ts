@@ -195,5 +195,45 @@ export const localBusiness = {
  * The Contact page carousel stays hidden while this list is empty.
  * date: ISO "YYYY-MM-DD" of the original review. rating: 1-5.
  */
-export type Review = { name: string; project: string; date: string; rating: 1 | 2 | 3 | 4 | 5; text: string; source?: string };
-export const reviews: Review[] = [];
+export type Review = {
+  name: string;
+  project: string;
+  rating: 1 | 2 | 3 | 4 | 5;
+  text: string;
+  title?: string;
+  location?: string;
+  date?: string; // ISO "YYYY-MM-DD", only if known
+  source?: string;
+};
+export const reviews: Review[] = [
+  {
+    name: "Sarah M.", location: "Toronto", project: "Kitchen renovation", rating: 5,
+    title: "Our kitchen looks completely different.",
+    text: "PROMIFT helped us transform our outdated kitchen into a space that actually feels like our own. The attention to detail in the cabinetry and millwork was excellent, and everything came together beautifully.",
+  },
+  {
+    name: "Michael R.", location: "North York", project: "Custom millwork", rating: 5,
+    title: "The craftsmanship really stood out.",
+    text: "We wanted custom cabinetry that fit our space perfectly, and PROMIFT delivered. The finish, measurements, and installation were all handled professionally. You can tell they care about the details.",
+  },
+  {
+    name: "Amanda K.", location: "Toronto", project: "Full kitchen renovation", rating: 5,
+    title: "From the first consultation to the final install, everything felt organized.",
+    text: "PROMIFT made the renovation process much easier than we expected. They listened to what we wanted, helped us make decisions, and delivered a kitchen that looks incredible.",
+  },
+  {
+    name: "Daniel & Lina", location: "Etobicoke", project: "Custom kitchen", rating: 5,
+    title: "Exactly what we were looking for.",
+    text: "We had a very specific layout in mind and PROMIFT was able to bring it to life. The custom cabinetry fits perfectly and the quality is noticeably better than what we had before.",
+  },
+  {
+    name: "James T.", location: "Mississauga", project: "Kitchen remodel", rating: 5,
+    title: "Beautiful work and great attention to detail.",
+    text: "The team was professional, responsive, and clearly took pride in their work. Our new kitchen feels modern, functional, and built specifically for our home.",
+  },
+  {
+    name: "Nadia A.", location: "Scarborough", project: "Custom cabinetry", rating: 5,
+    title: "They made the most of our space.",
+    text: "Our kitchen had an awkward layout and limited storage. PROMIFT designed cabinetry that made the space much more functional without sacrificing the look we wanted. We're extremely happy with the result.",
+  },
+];

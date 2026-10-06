@@ -124,6 +124,7 @@ export function KitchenJourney() {
     let filmDuration = 0;
     let pendingSeek = false;
     let seekTimer: ReturnType<typeof setTimeout> | null = null;
+    let stopPriming: (() => void) | null = null;
 
     const video = videoRef.current;
 
@@ -193,6 +194,42 @@ export function KitchenJourney() {
         }
       }
       if (video) {
+        // iOS Safari: React does not emit the `muted` attribute, and Safari
+        // will not load any frames (so seeking shows nothing) until a muted,
+        // inline video has been played once. Prime it with a silent
+        // play()+pause() as soon as it has a source, and again on the first
+        // touch/scroll in case Low Power Mode blocked the first attempt.
+        video.muted = true;
+        video.defaultMuted = true;
+        video.setAttribute("muted", "");
+        video.setAttribute("playsinline", "");
+        video.setAttribute("webkit-playsinline", "");
+        let primed = false;
+        const gestures = ["touchstart", "pointerdown", "scroll", "click"] as const;
+        const prime = () => {
+          if (primed || disposed || !(video.currentSrc || video.getAttribute("src"))) return;
+          const attempt = video.play();
+          if (attempt && typeof attempt.then === "function") {
+            attempt
+              .then(() => {
+                video.pause();
+                primed = true;
+                stopPriming?.();
+              })
+              .catch(() => {
+                /* blocked until a user gesture — the gesture listeners retry */
+              });
+          }
+        };
+        gestures.forEach((g) => window.addEventListener(g, prime, { passive: true }));
+        video.addEventListener("loadstart", prime);
+        video.addEventListener("loadedmetadata", prime);
+        stopPriming = () => {
+          gestures.forEach((g) => window.removeEventListener(g, prime));
+          video.removeEventListener("loadstart", prime);
+          video.removeEventListener("loadedmetadata", prime);
+        };
+        prime();
         const onMeta = () => {
           filmDuration = Number.isFinite(video.duration) ? video.duration : 0;
         };
@@ -216,6 +253,7 @@ export function KitchenJourney() {
       if (measure) window.removeEventListener("resize", measure);
       video?.removeEventListener("seeked", onSeeked);
       if (seekTimer) clearTimeout(seekTimer);
+      stopPriming?.();
       scene?.dispose();
     };
   }, [mode]);
@@ -293,7 +331,7 @@ export function KitchenJourney() {
               ref={videoRef}
               className="pf-journey__layer pf-journey__film"
               src={filmSrc ?? undefined}
-              poster={FILM.poster}
+              poster={filmSrc && filmSrc === FILM.mobileClip && FILM.mobilePoster ? FILM.mobilePoster : FILM.poster}
               muted
               playsInline
               preload="auto"
